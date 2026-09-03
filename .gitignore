@@ -1,0 +1,12 @@
+artifacts/
+src/**/bin/
+src/**/obj/
+tests/**/bin/
+tests/**/obj/
+*.user
+*.suo
+*.log
+.vs/
+.idea/
+.vscode/
+

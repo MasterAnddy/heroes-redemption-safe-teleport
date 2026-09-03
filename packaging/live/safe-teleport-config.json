@@ -1,0 +1,26 @@
+{
+  "ProcessName": "Heroes & Redemption.exe",
+  "ModuleName": "GameAssembly.dll",
+  "ExpectedModuleSha256": "56584F8D7E96FDB3716EC00E5FB27238A53CD2E92D6150B8F1F435EAA7453541",
+  "PlayerStatsUpdateRva": "0x4C9740",
+  "ExpectedUpdatePrefix": "40 53 48 83 EC 30 80 79 60 00 48 8B D9",
+  "RigidbodyGetPositionRva": "0x1F80690",
+  "RigidbodySetPositionRva": "0x1F806F0",
+  "RigidbodySetVelocityRva": "0x1F808C0",
+  "SceneManagerGetActiveSceneRva": "0x1F36F60",
+  "SceneGetNameInternalRva": "0x1F364A0",
+  "SaveAnchorHotkey": "F7",
+  "TeleportHotkey": "F6",
+  "ClearAnchorHotkey": "F8",
+  "ExitHotkey": "F12",
+  "SafeSceneSpawns": {
+    "Cave": { "X": -97.0, "Y": -13.0 },
+    "Cemetery": { "X": -123.5, "Y": -1.125 },
+    "Winterland": { "X": 10.975439, "Y": -16.765644 },
+    "Sewer": { "X": -118.46875, "Y": -91.40625 },
+    "OldPrison": { "X": -134.8125, "Y": -105.625 },
+    "Catacomb": { "X": -174.968811, "Y": -7.281252 }
+  },
+  "EmergencyStep": 4.0,
+  "MaximumCoordinateMagnitude": 1000000.0
+}
