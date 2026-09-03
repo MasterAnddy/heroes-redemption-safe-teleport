@@ -80,4 +80,3 @@ dist/                                可發布壓縮包
 - F6 不是穿牆導航；未知場景的 Live 緊急候選位置仍需由玩家確認是否安全。
 
 《Heroes & Redemption》及其資產屬於各自權利人。本專案依 [MIT License](LICENSE) 發布，與遊戲開發者及發行商沒有關聯。
-
