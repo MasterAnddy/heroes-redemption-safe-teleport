@@ -51,7 +51,7 @@ internal static class HookImageBuilder
             checked(moduleBase + config.GetSceneNameRva),
             returnAddress);
         if (code.Length > HookLayout.AllocationSize - HookLayout.CodeOffset)
-            throw new InvalidOperationException("钩子代码超过代码页。");
+            throw new InvalidOperationException("The hook code exceeds the code page.");
         code.CopyTo(image, HookLayout.CodeOffset);
 
         var codeAddress = checked(allocationBase + HookLayout.CodeOffset);
@@ -216,7 +216,7 @@ internal static class HookImageBuilder
             foreach (var (offset, label) in _fixups)
             {
                 if (!_labels.TryGetValue(label, out var target))
-                    throw new InvalidOperationException($"未定义标签：{label}。");
+                    throw new InvalidOperationException($"Undefined label: {label}.");
                 BinaryPrimitives.WriteInt32LittleEndian(result.AsSpan(offset, 4), target - (offset + 4));
             }
             return result;

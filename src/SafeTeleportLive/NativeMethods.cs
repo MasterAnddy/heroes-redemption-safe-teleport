@@ -27,7 +27,7 @@ internal static class NativeMethods
     {
         if (text.Length >= 2 && text[0] is 'F' or 'f' && int.TryParse(text[1..], out var n) && n is >= 1 and <= 24)
             return 0x70 + n - 1;
-        throw new InvalidOperationException($"不支持的热键：{text}。");
+        throw new InvalidOperationException($"Unsupported hotkey: {text}.");
     }
 
     internal static nint OpenGameProcess(int pid)
@@ -125,7 +125,7 @@ internal static class NativeMethods
             ResumeAndClose(suspended);
             Thread.Sleep(2);
         }
-        throw new InvalidOperationException("PlayerStats.Update 入口持续处于执行中，未写入补丁。");
+        throw new InvalidOperationException("PlayerStats.Update remained in use; the patch was not written.");
     }
 
     internal static void ResumeAndClose(IEnumerable<nint> handles)

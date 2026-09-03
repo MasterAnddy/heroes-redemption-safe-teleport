@@ -57,7 +57,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"错误：{ex.Message}");
+            Console.Error.WriteLine($"Error: {ex.Message}");
             RestoreHook();
             return 1;
         }
@@ -77,7 +77,7 @@ internal static class Program
         var fixtureImage = HookImageBuilder.Build(0x0000012345600000, 0x0000000180000000, _config);
         if (!HookImageBuilder.TryDecodeEntryPatch(fixtureImage.EntryPatch, out var decoded) ||
             decoded != 0x0000012345600000 + HookLayout.CodeOffset)
-            throw new InvalidOperationException("入口跳板编码校验失败。");
+            throw new InvalidOperationException("Entry trampoline encoding validation failed.");
         Console.WriteLine($"VALIDATE config={Path.GetFullPath(configPath)} moduleHash=PASS prologue=PASS " +
                           $"patchLength={HookImageBuilder.PatchLength} hookCodeBytes={fixtureImage.CodeLength} status=PASS");
         return 0;
@@ -102,13 +102,13 @@ internal static class Program
         }
 
         image.EntryPatch.CopyTo(simulatedEntry, 0);
-        Require(HookImageBuilder.TryDecodeEntryPatch(simulatedEntry, out var codeAddress), "跳板形状必须可识别。");
-        Require(codeAddress == allocation + HookLayout.CodeOffset, "跳板目的地址错误。");
-        Require(image.Allocation.AsSpan(0, HookLayout.Magic.Length).SequenceEqual(HookLayout.Magic), "魔数错误。");
-        Require(BinaryPrimitives.ReadInt32LittleEndian(image.Allocation.AsSpan(8, 4)) == HookLayout.Version, "版本错误。");
+        Require(HookImageBuilder.TryDecodeEntryPatch(simulatedEntry, out var codeAddress), "The trampoline shape must be recognized.");
+        Require(codeAddress == allocation + HookLayout.CodeOffset, "The trampoline destination address is incorrect.");
+        Require(image.Allocation.AsSpan(0, HookLayout.Magic.Length).SequenceEqual(HookLayout.Magic), "The hook magic value is incorrect.");
+        Require(BinaryPrimitives.ReadInt32LittleEndian(image.Allocation.AsSpan(8, 4)) == HookLayout.Version, "The hook version is incorrect.");
 
         var packed = new Position2(12.5f, -3.25f).Packed;
-        Require(Position2.FromPacked(packed) == new Position2(12.5f, -3.25f), "坐标打包往返失败。");
+        Require(Position2.FromPacked(packed) == new Position2(12.5f, -3.25f), "Position packing did not round-trip.");
         var policy = new AnchorPolicy(_config.EmergencyStep);
         const long playerA = 0x11110000;
         const long playerB = 0x22220000;
@@ -116,24 +116,24 @@ internal static class Program
         const int sceneB = 20;
         var saved = policy.Save(new Position2(12.5f, -3.25f), playerA, sceneA);
         var manual = policy.ChooseTarget(new Position2(99, 88), playerA, sceneA);
-        Require(manual.Target == saved && manual.Source == "manual-anchor", "F7/F6 锚点往返失败。");
+        Require(manual.Target == saved && manual.Source == "manual-anchor", "The F7/F6 anchor did not round-trip.");
         policy.ObserveScope(playerA, sceneB);
-        Require(!policy.HasManualAnchor, "同一 PlayerStats 跨场景必须清除锚点。");
+        Require(!policy.HasManualAnchor, "A scene change on the same PlayerStats instance must clear the anchor.");
         _ = policy.Save(new Position2(3, 4), playerA, sceneB);
         policy.ObserveScope(playerB, sceneB);
-        Require(!policy.HasManualAnchor, "切换 PlayerStats 实例必须清除跨场景锚点。");
+        Require(!policy.HasManualAnchor, "Changing the PlayerStats instance must clear the previous anchor.");
         var safeSpawn = new Position2(-123.5f, -1.125f);
         var sceneFallback = policy.ChooseTarget(new Position2(1, 2), playerB, sceneB, safeSpawn, "Cemetery");
         Require(sceneFallback.Target == safeSpawn && sceneFallback.Source == "verified-scene-spawn:Cemetery",
-            "无手动锚点时必须优先选择当前场景已验证出生点。");
+            "The verified spawn for the current scene must be preferred when no manual anchor exists.");
         var emergency1 = policy.ChooseTarget(new Position2(1, 2), playerB, sceneB);
         var emergency2 = policy.ChooseTarget(new Position2(1, 2), playerB, sceneB);
-        Require(emergency1.Target == new Position2(1, 2 + _config.EmergencyStep), "首次应急候选错误。");
-        Require(emergency2.Target == new Position2(1 + _config.EmergencyStep, 2), "第二应急候选错误。");
-        Require(!new Position2(float.NaN, 0).IsPlausible(_config.MaximumCoordinateMagnitude), "NaN 必须被拒绝。");
+        Require(emergency1.Target == new Position2(1, 2 + _config.EmergencyStep), "The first emergency candidate is incorrect.");
+        Require(emergency2.Target == new Position2(1 + _config.EmergencyStep, 2), "The second emergency candidate is incorrect.");
+        Require(!new Position2(float.NaN, 0).IsPlausible(_config.MaximumCoordinateMagnitude), "NaN coordinates must be rejected.");
 
         original.CopyTo(simulatedEntry, 0);
-        Require(simulatedEntry.SequenceEqual(original), "回滚后入口必须逐字节还原。");
+        Require(simulatedEntry.SequenceEqual(original), "Rollback must restore every entry byte exactly.");
         Console.WriteLine($"FIXTURE hookAddress=0x{codeAddress:X} codeBytes={image.CodeLength} patch={Convert.ToHexString(image.EntryPatch)}");
         Console.WriteLine($"FIXTURE F7={saved} F6={manual.Target} source={manual.Source} moved=1 velocityAfter=(0,0)");
         Console.WriteLine($"FIXTURE sceneChange=0x{playerB:X} anchorCleared=1 scene=Cemetery verifiedSpawn={sceneFallback.Target} " +
@@ -171,7 +171,7 @@ internal static class Program
                 suspended = NativeMethods.SuspendThreadsForPatch(_process!, _methodAddress, HookImageBuilder.PatchLength);
                 var recheck = NativeMethods.Read(_processHandle, _methodAddress, HookImageBuilder.PatchLength);
                 if (!recheck.SequenceEqual(_config.ExpectedPrefixBytes))
-                    throw new InvalidOperationException("挂接前 PlayerStats.Update 字节发生变化，未覆盖。");
+                    throw new InvalidOperationException("PlayerStats.Update changed before hook installation; no bytes were overwritten.");
                 var oldProtection = NativeMethods.Protect(
                     _processHandle, _methodAddress, HookImageBuilder.PatchLength, NativeMethods.PageExecuteReadWrite);
                 try
@@ -186,7 +186,7 @@ internal static class Program
                 }
                 var installed = NativeMethods.Read(_processHandle, _methodAddress, image.EntryPatch.Length);
                 if (!installed.SequenceEqual(image.EntryPatch))
-                    throw new InvalidOperationException("入口钩子写入后回读不一致。");
+                    throw new InvalidOperationException("The installed entry hook did not match on readback.");
             }
             finally
             {
@@ -200,7 +200,7 @@ internal static class Program
         }
 
         if (!TryResolveOurHook(current, out _allocationBase))
-            throw new InvalidOperationException($"PlayerStats.Update 入口既非原始字节也非本工具钩子：{Convert.ToHexString(current)}。");
+            throw new InvalidOperationException($"PlayerStats.Update contains neither the original bytes nor this tool's hook: {Convert.ToHexString(current)}.");
         _dataAddress = _allocationBase + HookLayout.DataOffset;
         _hookActive = true;
         Console.WriteLine($"LIVE_HOOK_REATTACHED method=0x{_methodAddress:X} cave=0x{_allocationBase:X} status=PASS");
@@ -217,10 +217,10 @@ internal static class Program
         var policy = new AnchorPolicy(_config.EmergencyStep);
         var lastCount = 0;
 
-        Console.WriteLine($"已连接 PID {_process!.Id}。{_config.SaveAnchorHotkey}=保存安全锚点，" +
-                          $"{_config.TeleportHotkey}=返回锚点/应急脱困，{_config.ClearAnchorHotkey}=清除锚点，" +
-                          $"{_config.ExitHotkey}=还原钩子并退出。");
-        Console.WriteLine("热键仅在游戏窗口位于前台时响应；不会关闭游戏。");
+        Console.WriteLine($"Attached to PID {_process!.Id}. {_config.SaveAnchorHotkey}=save safe anchor, " +
+                          $"{_config.TeleportHotkey}=return to anchor/emergency position, {_config.ClearAnchorHotkey}=clear anchor, " +
+                          $"{_config.ExitHotkey}=restore hook and exit.");
+        Console.WriteLine("Hotkeys respond only while the game window is in the foreground. The game will remain running.");
 
         while (!_process.HasExited)
         {
@@ -261,7 +261,7 @@ internal static class Program
                             verifiedSpawn,
                             snapshot.SceneName);
                         if (!choice.Target.IsPlausible(_config.MaximumCoordinateMagnitude))
-                            throw new InvalidOperationException($"目标坐标异常：{choice.Target}。");
+                            throw new InvalidOperationException($"The target position is invalid: {choice.Target}.");
                         WriteTarget(choice.Target);
                         WriteInt32(HookLayout.Status, 0);
                         WriteInt32(HookLayout.Command, 1); // command is committed last
@@ -283,7 +283,7 @@ internal static class Program
             Thread.Sleep(20);
         }
         _hookActive = false;
-        Console.WriteLine("游戏程序已结束；系统已自动回收即时钩子内存。");
+        Console.WriteLine("The game process has exited; the operating system reclaimed the live-hook memory.");
         return 0;
     }
 
@@ -303,9 +303,9 @@ internal static class Program
     private static void RequireUsable(Snapshot snapshot)
     {
         if (!snapshot.Valid || snapshot.PlayerPointer == 0 || snapshot.Heartbeat == 0)
-            throw new InvalidOperationException("角色刚切换场景或尚未完成初始化，请等待画面恢复后再按一次。");
+            throw new InvalidOperationException("The character just changed scenes or has not finished initializing. Wait for gameplay to resume, then try again.");
         if (!snapshot.Current.IsPlausible(_config!.MaximumCoordinateMagnitude))
-            throw new InvalidOperationException($"读取到异常角色坐标：{snapshot.Current}。");
+            throw new InvalidOperationException($"The current character position is invalid: {snapshot.Current}.");
     }
 
     private static void WriteTarget(Position2 target)
@@ -355,12 +355,12 @@ internal static class Program
         if (current.SequenceEqual(_config!.ExpectedPrefixBytes))
             return "ROLLBACK state=ALREADY_ORIGINAL status=PASS";
         if (!TryResolveOurHook(current, out _allocationBase))
-            throw new InvalidOperationException($"入口不是本工具钩子，停止覆盖：{Convert.ToHexString(current)}。");
+            throw new InvalidOperationException($"The entry does not contain this tool's hook; no bytes were overwritten: {Convert.ToHexString(current)}.");
         _hookActive = true;
         RestoreHook();
         var restored = NativeMethods.Read(_processHandle, _methodAddress, HookImageBuilder.PatchLength);
         if (!restored.SequenceEqual(_config.ExpectedPrefixBytes))
-            throw new InvalidOperationException("回滚后字节校验失败。");
+            throw new InvalidOperationException("Rollback byte validation failed.");
         return $"ROLLBACK before={Convert.ToHexString(current)} after={Convert.ToHexString(restored)} status=PASS";
     }
 
@@ -397,7 +397,7 @@ internal static class Program
                     return;
                 }
                 if (!TryResolveOurHook(current, out _))
-                    throw new InvalidOperationException("退出时入口已被其他工具改动，未覆盖未知字节。");
+                    throw new InvalidOperationException("Another tool changed the entry before exit; unknown bytes were not overwritten.");
                 var oldProtection = NativeMethods.Protect(
                     _processHandle, _methodAddress, HookImageBuilder.PatchLength, NativeMethods.PageExecuteReadWrite);
                 try
@@ -412,7 +412,7 @@ internal static class Program
                 }
                 var restored = NativeMethods.Read(_processHandle, _methodAddress, HookImageBuilder.PatchLength);
                 if (!restored.SequenceEqual(_config.ExpectedPrefixBytes))
-                    throw new InvalidOperationException("即时钩子回滚校验失败。");
+                    throw new InvalidOperationException("Live-hook rollback validation failed.");
                 Console.WriteLine($"LIVE_HOOK_ROLLED_BACK bytes={Convert.ToHexString(restored)} status=PASS");
                 _hookActive = false;
             }
@@ -424,7 +424,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"回滚错误：{ex.Message}");
+            Console.Error.WriteLine($"Rollback error: {ex.Message}");
         }
         finally
         {
@@ -488,7 +488,7 @@ internal static class Program
             }
             catch { process.Dispose(); }
         }
-        throw new InvalidOperationException($"未找到正在运行的 {processName}。");
+        throw new InvalidOperationException($"No running {processName} process was found.");
     }
 
     private static void VerifyModuleHash(string path, string expected)
@@ -496,7 +496,7 @@ internal static class Program
         using var stream = File.OpenRead(path);
         var actual = Convert.ToHexString(SHA256.HashData(stream));
         if (!actual.Equals(expected.Replace(" ", ""), StringComparison.OrdinalIgnoreCase))
-            throw new InvalidOperationException($"模块 SHA-256 不匹配：{actual}。");
+            throw new InvalidOperationException($"Module SHA-256 mismatch. Actual: {actual}.");
     }
 
     private static void VerifyFilePrefix(string modulePath, LiveConfig config)
@@ -507,7 +507,7 @@ internal static class Program
         stream.Position = offset;
         var bytes = new byte[HookImageBuilder.PatchLength];
         if (stream.Read(bytes) != bytes.Length || !bytes.SequenceEqual(config.ExpectedPrefixBytes))
-            throw new InvalidOperationException("磁盘 PlayerStats.Update 前缀校验失败。");
+            throw new InvalidOperationException("The on-disk PlayerStats.Update prefix failed validation.");
     }
 
     private static string FindGameRoot(string configPath, string? gameRootOverride)
@@ -517,7 +517,7 @@ internal static class Program
             var resolved = Path.GetFullPath(gameRootOverride);
             if (File.Exists(Path.Combine(resolved, _config!.ModuleName)))
                 return resolved;
-            throw new FileNotFoundException($"指定的遊戲目錄中找不到 {_config!.ModuleName}：{resolved}");
+            throw new FileNotFoundException($"{_config!.ModuleName} was not found in the specified game directory: {resolved}");
         }
 
         var directory = new DirectoryInfo(Path.GetDirectoryName(Path.GetFullPath(configPath))!);
@@ -526,7 +526,7 @@ internal static class Program
             if (File.Exists(Path.Combine(directory.FullName, _config!.ModuleName))) return directory.FullName;
             directory = directory.Parent;
         }
-        throw new FileNotFoundException($"从配置路径向上未找到 {_config!.ModuleName}。");
+        throw new FileNotFoundException($"{_config!.ModuleName} was not found in the configuration directory or any parent directory.");
     }
 
     private static void Require(bool condition, string message)

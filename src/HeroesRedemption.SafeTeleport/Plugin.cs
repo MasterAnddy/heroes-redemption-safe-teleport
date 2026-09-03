@@ -27,25 +27,25 @@ public sealed class Plugin : BasePlugin
         ValidateGameBuild();
 
         var enabled = Config.Bind("General", "Enabled", true,
-            "启用安全位置记录及瞬移热键。");
+            "Enable safe-position tracking and teleport hotkeys.");
         var teleportKey = Config.Bind("Hotkeys", "TeleportKey", Key.F6,
-            "瞬移至手动检查点；没有手动检查点时，瞬移至距离当前位置最近的可靠自动检查点。");
+            "Teleport to the manual checkpoint, or to the nearest reliable automatic checkpoint when no manual checkpoint exists.");
         var saveKey = Config.Bind("Hotkeys", "SaveKey", Key.F7,
-            "把当前位置保存为本地图、本玩家实例的手动检查点。");
+            "Save the current position as the manual checkpoint for this map and player instance.");
         var sampleInterval = Config.Bind("Safety", "SampleIntervalSeconds", 0.10f,
-            "检查玩家位置的间隔（未缩放秒）。范围 0.02..1.00。");
+            "Interval between player-position checks, in unscaled seconds. Range: 0.02 to 1.00.");
         var reliabilityDelay = Config.Bind("Safety", "ReliabilityDelaySeconds", 1.50f,
-            "玩家到达一个位置并继续存活多久后，才把它视为可靠位置。范围 0.25..10.00。");
+            "Time a position must remain survivable before it is considered reliable. Range: 0.25 to 10.00 seconds.");
         var spacing = Config.Bind("Safety", "CheckpointSpacing", 1.25f,
-            "自动检查点之间的最小世界距离。范围 0.25..20.00。");
+            "Minimum world-space distance between automatic checkpoints. Range: 0.25 to 20.00.");
         var minimumTeleportDistance = Config.Bind("Safety", "MinimumTeleportDistance", 1.00f,
-            "自动选择时跳过距离当前位置过近的检查点。范围 0.10..20.00。");
+            "Ignore checkpoints closer than this distance when selecting automatically. Range: 0.10 to 20.00.");
         var maximumCheckpoints = Config.Bind("Safety", "MaximumAutoCheckpoints", 96,
-            "每个地图/玩家实例保存的自动检查点上限。范围 4..512。");
+            "Maximum automatic checkpoints stored for each map and player instance. Range: 4 to 512.");
         var preferManual = Config.Bind("Safety", "PreferManualCheckpoint", true,
-            "存在 F7 手动检查点时，F6 优先回到该位置；关闭后会在全部检查点中选择最近者。");
+            "When an F7 manual checkpoint exists, F6 returns there first. Disable this to select the nearest checkpoint instead.");
         var logAutoCaptures = Config.Bind("Diagnostics", "LogAutoCaptures", false,
-            "是否记录每次自动检查点确认；默认关闭以避免刷日志。");
+            "Log every automatic checkpoint confirmation. Disabled by default to avoid noisy logs.");
 
         SafeTeleportBehaviour.Configure(
             Log, enabled, teleportKey, saveKey, sampleInterval, reliabilityDelay,

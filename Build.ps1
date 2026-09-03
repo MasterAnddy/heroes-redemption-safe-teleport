@@ -7,6 +7,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$env:DOTNET_CLI_UI_LANGUAGE = 'en-US'
 $repoRoot = [IO.Path]::GetFullPath($PSScriptRoot)
 $root = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $GameRoot).Path)
 $artifacts = Join-Path $repoRoot 'artifacts'
@@ -102,14 +103,14 @@ $liveStage = Join-Path $artifacts 'package-live'
 New-Item -ItemType Directory -Force -Path $pluginStage, $liveStage | Out-Null
 
 Copy-Item -LiteralPath $pluginDll -Destination $pluginStage
-foreach ($name in @('Install.ps1', 'Rollback.ps1', 'local.heroesredemption.safeteleport.cfg', 'README.zh-TW.md')) {
+foreach ($name in @('Install.ps1', 'Rollback.ps1', 'local.heroesredemption.safeteleport.cfg', 'README.md')) {
     Copy-Item -LiteralPath (Join-Path $repoRoot "packaging\bepinex\$name") -Destination $pluginStage
 }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination $pluginStage
 New-PackageManifest $pluginStage 'HeroesRedemption SafeTeleport BepInEx'
 
 Copy-Item -LiteralPath $liveExe -Destination $liveStage
-foreach ($name in @('Start-SafeTeleport.cmd', 'Rollback.ps1', 'safe-teleport-config.json', 'README.zh-TW.md')) {
+foreach ($name in @('Start-SafeTeleport.cmd', 'Rollback.ps1', 'safe-teleport-config.json', 'README.md')) {
     Copy-Item -LiteralPath (Join-Path $repoRoot "packaging\live\$name") -Destination $liveStage
 }
 Copy-Item -LiteralPath (Join-Path $repoRoot 'LICENSE') -Destination $liveStage

@@ -1,82 +1,82 @@
 # Heroes & Redemption Safe Teleport
 
-《Heroes & Redemption》的離線單機卡位救援工具。按 **F6** 返回可靠位置，按 **F7** 保存手動位置；瞬移時會清除角色剛體速度，避免角色再次被推回碰撞區。
+An offline single-player recovery tool for *Heroes & Redemption*. Press **F6** to return to a reliable position and **F7** to save a manual checkpoint. Teleporting also clears the character's rigidbody velocity so collision forces do not immediately push the character back into the stuck area.
 
-本倉庫提供兩種發行包：
+The repository provides two distributions:
 
-| 發行包 | 適用情境 | BepInEx | 主要按鍵 |
+| Package | Use case | Requires BepInEx | Hotkeys |
 |---|---|---:|---|
-| `HeroesRedemption-SafeTeleport-BepInEx.zip` | 長期使用，隨遊戲啟動並自動建立可靠檢查點 | 需要 | F6、F7 |
-| `HeroesRedemption-SafeTeleport-Live.zip` | 遊戲已啟動且角色當下卡住 | 不需要 | F6、F7、F8、F12 |
+| `HeroesRedemption-SafeTeleport-BepInEx.zip` | Persistent use; starts with the game and records reliable checkpoints automatically | Yes | F6, F7 |
+| `HeroesRedemption-SafeTeleport-Live.zip` | Immediate recovery when the game is already running | No | F6, F7, F8, F12 |
 
-兩個版本擇一使用；不要同時啟動，否則相同的 F6/F7 熱鍵會被兩邊處理。下載後以根目錄的 `SHA256SUMS` 核對壓縮包。
+Use one distribution at a time. Running both would make each tool handle the same F6/F7 key presses. After downloading, verify the package against the repository's [`SHA256SUMS`](SHA256SUMS).
 
-## 支援版本
+## Supported game build
 
-程式會在動作前校驗 `GameAssembly.dll`：
+Both tools validate `GameAssembly.dll` before performing version-sensitive work:
 
 ```text
 56584F8D7E96FDB3716EC00E5FB27238A53CD2E92D6150B8F1F435EAA7453541
 ```
 
-雜湊不同代表遊戲版本不符，工具會停止。這個限制可防止固定類型或函式位置被套用到未知版本。
+A different hash indicates an unsupported game build, so the tool stops before applying version-specific type or function locations.
 
-## 使用方式
+## Usage
 
-### BepInEx 持久插件
+### Persistent BepInEx plugin
 
-1. 安裝 BepInEx 6 IL2CPP，並至少啟動一次遊戲以產生 `BepInEx/interop`。
-2. 解壓 BepInEx 發行包。
-3. 關閉遊戲，在 PowerShell 執行：
+1. Install BepInEx 6 IL2CPP and launch the game at least once so it generates `BepInEx/interop`.
+2. Extract the BepInEx package.
+3. Close the game, then run the following in PowerShell:
 
 ```powershell
-$GameRoot = Read-Host '請輸入遊戲目錄'
+$GameRoot = Read-Host 'Enter the game directory'
 .\Install.ps1 -GameRoot $GameRoot
 ```
 
-進入地圖後，插件只會把玩家存活、未暫停且經過可靠性延遲的位置加入歷史。切圖或玩家實例改變時會清空舊記錄。
+While a map is active, the plugin records positions only when the player is alive, gameplay is unpaused, and the position has passed the configured reliability delay. Changing maps or replacing the player instance clears previous checkpoints.
 
-### Live 即時工具
+### Live recovery tool
 
-1. 安裝 .NET 8 Runtime，解壓 Live 發行包。
-2. 遊戲進入地圖後執行 `Start-SafeTeleport.cmd`。
-3. 切回遊戲，按 **F6** 脫困；到達安全位置後按 **F7** 保存。
-4. 完成後按 **F12** 還原即時鉤子並退出工具。
+1. Install the .NET 8 Runtime and extract the Live package.
+2. Enter a playable map, then run `Start-SafeTeleport.cmd`.
+3. Return to the game and press **F6** to recover. After reaching a confirmed safe location, press **F7** to save it.
+4. When finished, press **F12** to restore the entry hook and exit the tool.
 
-Live 版只修改目前遊戲程序的記憶體，不修改磁碟上的遊戲組件。F12 會先還原入口；確認沒有執行中的鉤子後釋放配置，未立即釋放的區塊會由遊戲程序結束時回收。若工具異常退出而遊戲仍在運行，可執行包內 `Rollback.ps1`。
+The Live tool changes only the running game process's memory; it does not modify the game assembly on disk. F12 restores the original entry bytes before releasing the allocation when no hook invocation remains active. The operating system reclaims any retained allocation when the game exits. If the tool exits unexpectedly while the game is still running, use the package's `Rollback.ps1`.
 
-## 從原始碼建置
+## Build from source
 
-需求：Windows PowerShell、.NET 8 SDK，以及一份已產生 BepInEx IL2CPP interop 的遊戲目錄。
+Requirements: Windows PowerShell, the .NET 8 SDK, and a game directory where BepInEx 6 IL2CPP has already generated its interop assemblies.
 
 ```powershell
-.\Build.ps1 -GameRoot (Read-Host '請輸入遊戲目錄')
+.\Build.ps1 -GameRoot (Read-Host 'Enter the game directory')
 ```
 
-建置腳本會：
+The build script:
 
-1. 校驗目標遊戲組件；
-2. 建置持久插件與 Live 工具；
-3. 執行兩組基準／修改後 fixture 及 Live 靜態驗證；
-4. 生成 `dist/` 內的兩個最小發行包與 `SHA256SUMS`。
+1. Validates the target game assembly.
+2. Builds the persistent plugin and Live tool.
+3. Runs the baseline and modified fixtures plus Live static validation.
+4. Produces two minimal packages in `dist/` and refreshes `SHA256SUMS`.
 
-建置不會複製或封裝任何遊戲二進制。詳細測試方式見 [`docs/verification.md`](docs/verification.md)。
+The build does not copy or package game binaries. See [`docs/verification.md`](docs/verification.md) for the reproducible test procedure.
 
-## 專案結構
+## Repository layout
 
 ```text
-src/HeroesRedemption.SafeTeleport/  BepInEx IL2CPP 插件
-src/SafeTeleportLive/               Windows 即時工具
-tests/SafeTeleportFixture/          Unity 無關的檢查點策略 fixture
-packaging/                           安裝、設定與回滾檔案
-dist/                                可發布壓縮包
+src/HeroesRedemption.SafeTeleport/  BepInEx IL2CPP plugin
+src/SafeTeleportLive/               Windows live recovery tool
+tests/SafeTeleportFixture/          Unity-independent checkpoint policy fixture
+packaging/                           Installation, configuration, and rollback files
+dist/                                Release-ready archives
 ```
 
-## 邊界
+## Scope and limitations
 
-- 僅供離線單機使用。
-- 不包含遊戲二進制、存檔或第三方框架。
-- BepInEx 版檢查點只存在於當次場景／玩家實例；Live 版錨點只存在於工具執行期間。
-- F6 不是穿牆導航；未知場景的 Live 緊急候選位置仍需由玩家確認是否安全。
+- Designed for offline single-player use.
+- Does not include game binaries, save data, or third-party frameworks.
+- BepInEx checkpoints last only for the current scene and player instance. Live anchors last only while the tool is running.
+- F6 is a recovery shortcut rather than pathfinding or collision navigation. For an unknown scene, confirm that any nearby emergency candidate is safe.
 
-《Heroes & Redemption》及其資產屬於各自權利人。本專案依 [MIT License](LICENSE) 發布，與遊戲開發者及發行商沒有關聯。
+*Heroes & Redemption* and its assets belong to their respective rights holders. This project is distributed under the [MIT License](LICENSE) and is not affiliated with the game's developer or publisher.
